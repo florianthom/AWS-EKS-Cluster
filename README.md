@@ -146,4 +146,4 @@ In the end you have to choose between limitation by default-aws-eks-cni and the 
  - nat: https://dev.betterdoc.org/infrastructure/2020/02/04/setting-up-a-nat-gateway-on-aws-using-terraform.html
  - introduction to calico: https://luktom.net/en/e1715-how-to-and-why-replace-aws-cni-with-calico-on-aws-eks-cluster
  - eks-default-cni vs eks-custom-cni: https://medium.com/faun/choosing-your-cni-with-aws-eks-vpc-cni-or-calico-1ee6229297c5
- - additional sources: informations.pdf (unfortunatly notes are in german-lenguage)
+ - additional sources: additionalInformations.pdf (unfortunatly notes are mostly in german-lenguage)
