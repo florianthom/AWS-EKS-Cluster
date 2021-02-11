@@ -17,3 +17,4 @@ kubectl get pods --all-namespaces -o wide
 kubectl apply -f https://docs.projectcalico.org/manifests/calico-vxlan.yaml
 
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl delete -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml

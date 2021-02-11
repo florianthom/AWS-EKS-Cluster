@@ -12,15 +12,15 @@ output "cluster_name" {
 }
 
 variable "public_ip" {
-  type = bool
+  type        = bool
   description = "Indicates whether the subnets map public ips on instance-launches"
-  default = true
+  default     = true
 }
 
 variable "cluster_name" {
   type        = string
   description = "EKS cluster name."
-  default = "test-eks-cluster-1"
+  default     = "test-eks-cluster-1"
 }
 
 
@@ -28,7 +28,7 @@ variable "cluster_name" {
 resource "aws_route_table" "rt_eks_private_dev_main" {
   vpc_id = aws_vpc.vpc_dev_main.id
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_gateway.id
   }
   tags = {
@@ -40,9 +40,9 @@ resource "aws_route_table" "rt_eks_private_dev_main" {
 
 #subnets
 resource "aws_subnet" "eks-subnet-1_private_dev_main" {
-  vpc_id            = aws_vpc.vpc_dev_main.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "${var.region}${var.availability-zone}"
+  vpc_id                  = aws_vpc.vpc_dev_main.id
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "${var.region}${var.availability-zone}"
   map_public_ip_on_launch = var.public_ip
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
@@ -57,9 +57,9 @@ resource "aws_route_table_association" "rt-association_private_subnet_eks_1_dev_
 }
 
 resource "aws_subnet" "eks-subnet-2_private_dev_main" {
-  vpc_id            = aws_vpc.vpc_dev_main.id
-  cidr_block        = "10.0.4.0/24"
-  availability_zone = "${var.region}${var.availability-zone_second}"
+  vpc_id                  = aws_vpc.vpc_dev_main.id
+  cidr_block              = "10.0.4.0/24"
+  availability_zone       = "${var.region}${var.availability-zone_second}"
   map_public_ip_on_launch = var.public_ip
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
@@ -73,27 +73,10 @@ resource "aws_route_table_association" "rt-association_private_subnet_eks_2_dev_
   route_table_id = aws_route_table.rt_eks_private_dev_main.id
 }
 
-resource "aws_subnet" "eks-subnet-2_public_dev_main" {
-  vpc_id            = aws_vpc.vpc_dev_main.id
-  cidr_block        = "10.0.5.0/24"
-  availability_zone = "${var.region}${var.availability-zone_second}"
-  map_public_ip_on_launch = var.public_ip
-  tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"           = "1"
-    iac_environment                             = "development"
-  }
-}
-
-resource "aws_route_table_association" "rt-association_public_subnet_eks_2_dev_main" {
-  subnet_id      = aws_subnet.eks-subnet-2_public_dev_main.id
-  route_table_id = aws_route_table.rt_public_dev_main.id
-}
-
 # control plane
 ## control plane main role
 resource "aws_iam_role" "eks-main-role" {
-  name = "eks-main-role"
+  name               = "eks-main-role"
   assume_role_policy = <<POLICY
 {
   "Version": "2012-10-17",
@@ -135,9 +118,9 @@ resource "aws_security_group" "sg-eks" {
   }
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
     cidr_blocks = [
       "10.0.0.0/16",
       "172.16.0.0/12",
@@ -152,8 +135,8 @@ resource "aws_eks_cluster" "main" {
   role_arn = aws_iam_role.eks-main-role.arn
 
   vpc_config {
-    security_group_ids      = [aws_security_group.sg-eks.id]
-    subnet_ids              = [aws_subnet.eks-subnet-1_private_dev_main.id, aws_subnet.eks-subnet-2_private_dev_main.id]
+    security_group_ids = [aws_security_group.sg-eks.id]
+    subnet_ids         = [aws_subnet.eks-subnet-1_private_dev_main.id, aws_subnet.eks-subnet-2_private_dev_main.id]
     # kubectl is accessable from outside
     endpoint_private_access = false
     endpoint_public_access  = true
@@ -239,10 +222,10 @@ resource "aws_security_group_rule" "main-node-ingress-self" {
   protocol          = "-1"
   security_group_id = aws_security_group.main-node.id
   to_port           = 65535
-  cidr_blocks       = [
-      "10.0.0.0/16",
-      "172.16.0.0/12",
-      "192.168.0.0/16",
+  cidr_blocks = [
+    "10.0.0.0/16",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
   ]
 }
 
@@ -251,11 +234,11 @@ resource "aws_security_group_rule" "main-node-ingress-self" {
 ### and maybe this current general setting is changed to the more specify setting in the
 ### furture, so this rule is written because of this reason
 resource "aws_security_group_rule" "main-node-ingress-cluster" {
-  type                     = "ingress"
-  description              = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
-  from_port                = 1025
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.main-node.id
+  type              = "ingress"
+  description       = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
+  from_port         = 1025
+  protocol          = "tcp"
+  security_group_id = aws_security_group.main-node.id
   # docu: (Optional) The security group id to allow access to/from, depending on the type. Cannot be specified with cidr_blocks and self
   source_security_group_id = aws_security_group.sg-eks.id
   to_port                  = 65535
@@ -265,7 +248,7 @@ resource "aws_security_group_rule" "main-node-ingress-cluster" {
 resource "aws_launch_template" "eks_launch_template" {
   name = "eks_launch_template"
 
-  vpc_security_group_ids = [aws_security_group.main-node.id, aws_eks_cluster.main.vpc_config[0].cluster_security_group_id]
+  vpc_security_group_ids = [aws_security_group.main-node.id]
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -275,15 +258,15 @@ resource "aws_launch_template" "eks_launch_template" {
       volume_type = "gp2"
     }
   }
-  
+
   # has to be specified, else no connection to cluster
   # how to get?
   #   - https://docs.aws.amazon.com/de_de/eks/latest/userguide/retrieve-ami-id.html
   #   - https://docs.aws.amazon.com/de_de/eks/latest/userguide/eks-optimized-ami.html
   # aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.18/amazon-linux-2/recommended/image_id --region "eu-central-1" --query "Parameter.Value" --output text
-  image_id = "ami-0a3d7ac8c4302b317"
+  image_id      = "ami-0a3d7ac8c4302b317"
   instance_type = "t3.micro"
-  key_name               = aws_key_pair.ssh.key_name
+  key_name      = aws_key_pair.ssh.key_name
   user_data = base64encode(<<EOF
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="==BOUNDARY=="
@@ -322,8 +305,8 @@ resource "aws_eks_node_group" "demo" {
   }
 
   launch_template {
-   name = aws_launch_template.eks_launch_template.name
-   version = aws_launch_template.eks_launch_template.latest_version
+    name    = aws_launch_template.eks_launch_template.name
+    version = aws_launch_template.eks_launch_template.latest_version
   }
 
 
