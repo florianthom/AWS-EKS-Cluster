@@ -1,0 +1,19 @@
+sed -i.bak -e 's/us-west-2/eu-central-1/' aws-k8s-cni.yaml
+
+
+
+
+curl https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.7/config/v1.7/aws-k8s-cni.yaml > aws-cni.yaml
+cat aws-cni.yaml | kubectl delete -f -
+
+
+curl https://docs.projectcalico.org/manifests/calico.yaml > calico.yaml
+kubectl apply -f calico.yaml
+
+
+kubectl run my-shell --rm -i --tty --image ubuntu -- bash
+apt install iputils-ping
+kubectl get pods --all-namespaces -o wide
+kubectl apply -f https://docs.projectcalico.org/manifests/calico-vxlan.yaml
+
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml

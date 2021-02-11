@@ -1,0 +1,9 @@
+docker tag c056598acb45 flooth/nginx-static-site-test
+
+docker push flooth/nginx-static-site-test
+
+docker run --name some-nginx -p 80:80 -d flooth/nginx-static-site-test:latest
+
+
+
+

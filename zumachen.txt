@@ -1,0 +1,6 @@
+
+wie hat es tomsadf... gemacht? er hat noch weitere parameter?
+wie kann man alle pods private laufen lassen und nur den loadbalancer/ingrees public?
+
+später:
+calico
