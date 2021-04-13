@@ -121,9 +121,8 @@ The very granular cost-approximation of the given infrastructure is somewhere ar
  - aws-eks control-plane: 0.10€ per hour (around 80€ per month)
  - actual ec2 worker (3: jumphost, independend worker, eks-worker) (instance: t3.micro): 0.012€ per hour -> 3 worker: 3* 0.012 = 0.036€ per hour -> 0.036*24h*30d = ca 26€
  - more (vpc, s3, cloudtrail, ...): idk around maybe 5€
- 
- 
- ## Build with
+
+## Build with
  - terraform v0.13
  - eks (Kubernetes v18)
 
