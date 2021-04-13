@@ -50,21 +50,11 @@ This "Getting Started" section describes a sequence of steps which are needed to
 ## Important commands
 This section describes important commands, mostly important for development purposes.
 
- - run terraform
+### general
+ - lookup the max-number of pods you can use per node (with your instance type)
 ```
- terraform apply
-```
-
- - configure kubectl according the created cluster / setup connection between kubectl and cluster
-```
- aws eks --region "eu-central-1" update-kubeconfig --name "test-eks-cluster-1"
-```
-
- - save ssh-key to a known-directory for later usage (with this key you can connect to the jumphost/bastionhost + to all other machines inside the given vpc)
-```
- terraform output ssh_private_key_pem > ../keys/sshKey/ssh-key.pem
-```
-
+ # open url: https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt
+ ```
  - connect to node in a private subnet (connection to a node you can only reach over the jumphost)
 ```
  # add the key-file to your ssh-config
@@ -76,7 +66,67 @@ This section describes important commands, mostly important for development purp
  # so e.g. ec2-user@ip-of-your-hidden-node
  ssh ubuntu@ip-of-your-hidden-node
  ```
- 
+
+### aws
+ - configure kubectl according the created cluster / setup connection between kubectl and cluster
+```
+ aws eks --region "eu-central-1" update-kubeconfig --name "test-eks-cluster-1"
+```
+
+ - get current aws-cli-identity
+```
+aws sts get-caller-identity
+```
+
+### terraform
+ - run terraform
+```
+ terraform apply
+```
+
+ - save ssh-key to a known-directory for later usage (with this key you can connect to the jumphost/bastionhost + to all other machines inside the given vpc)
+```
+ terraform output ssh_private_key_pem > ../keys/sshKey/ssh-key.pem
+```
+
+### kubernetes
+#### kubernetes-general
+- list all pods across the kubernetes-namespaces
+```
+ kubectl get pods --all-namespaces -o wide
+```
+
+ - start testing ubuntu-pod
+```
+ kubectl run my-shell --rm -i --tty --image ubuntu -- bash
+```
+#### kubernetes-ingress
+keep in mind that the ingress is programmed to listen for a specific domain (according to the ingress-resource) (e.g. florianthom.io). So as long es you dont searched for florianthom.io you get "nginx not found". Important since you have the external ip of the ingress and you are maybe tempted to try it out but this wont work.
+Dns "a record" required for ingress-nginx: Mapping from ip to external-ip of ingress ("external-ip" is an dns-aws-name -> you have to dnslookup the ip).
+How to install: https://kubernetes.github.io/ingress-nginx/deploy/#aws .
+
+ - get ingress controller (/check if installed/running)
+```
+kubectl get pods -n ingress-nginx
+```
+
+ - get ingress ressource (!= controller)
+```
+kubectl get ingress
+```
+
+ - get external "ip" (actually domain-name) to attach the real dns to (on cloudflare or similar)
+```
+kubectl get services -n ingress-nginx
+```
+
+## Additional optional related commands
+ - install ingress-nginx
+```
+# https://kubernetes.github.io/ingress-nginx/deploy/#aws
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.45.0/deploy/static/provider/aws/deploy.yaml
+```
+
  - install metrics-server
 ```
  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
@@ -96,15 +146,13 @@ This section describes important commands, mostly important for development purp
  # calico ip is in the cidr-range of something like 192.168.x.x/24
 ```
 
- - list all pods across the kubernetes-namespaces
-```
- kubectl get pods --all-namespaces -o wide
-```
 
- - start testing ubuntu-pod
-```
- kubectl run my-shell --rm -i --tty --image ubuntu -- bash
-```
+
+
+ 
+
+
+
 
 ## Filestructure
 In general a kind of domain-driven-design was chosen. So there is a
@@ -125,6 +173,8 @@ The very granular cost-approximation of the given infrastructure is somewhere ar
 ## Build with
  - terraform v0.13
  - eks (Kubernetes v18)
+
+
 
 ## Acknowledgements
  - overall aws integration: https://www.youtube.com/watch?v=NjYsXuSBZ5U&ab_channel=SanjeevThiyagarajan
