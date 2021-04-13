@@ -1,6 +1,6 @@
 # eks
 # curl -LO https://dl.k8s.io/release/v1.18.0/bin/linux/amd64/kubectl
-# aws eks --region "eu-central-1" update-kubeconfig --name "test-eks-cluster-1"
+# aws eks --region "eu-central-1" update-kubeconfig --name "personal-website-eks-cluster-0"
 # ssh beachten: default user of amazon-eks-optimized-ami: ec2-user
 # terraform output ssh_private_key_pem > ../keys/sshKey/ssh-key.pem
 # check cni-version: kubectl describe daemonset aws-node --namespace kube-system | grep Image | cut -d "/" -f 2
@@ -202,7 +202,7 @@ resource "aws_eks_node_group" "eks-nodegroup-0" {
   subnet_ids      = [aws_subnet.eks-subnet-0.id, aws_subnet.eks-subnet-1.id]
   ami_type       = "AL2_x86_64"
   disk_size      = "20"
-  instance_types = ["t3.micro"]
+  instance_types = ["m5a.large"] # maybe without a (intel instead of amd) better
   # ssh is open to the internet -> see https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group
   remote_access {
     ec2_ssh_key = aws_key_pair.ssh.key_name
