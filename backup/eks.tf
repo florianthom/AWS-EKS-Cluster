@@ -17,8 +17,29 @@ variable "public_ip" {
   default     = true
 }
 
+variable "cluster_name" {
+  type        = string
+  description = "EKS cluster name."
+  default     = "test-eks-cluster-1"
+}
+
+
+# route-table to route private subnet to public subnet by natting
+resource "aws_route_table" "rt_eks_private_dev_main" {
+  vpc_id = aws_vpc.vpc_dev_main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+  tags = {
+    Name          = "eks private subnet rt"
+    "environment" = "development"
+  }
+}
+
+
 #subnets
-resource "aws_subnet" "eks-subnet-0" {
+resource "aws_subnet" "eks-subnet-1_private_dev_main" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
   cidr_block              = "10.0.3.0/24"
   availability_zone       = "${var.region}${var.availability-zone}"
@@ -30,12 +51,12 @@ resource "aws_subnet" "eks-subnet-0" {
   }
 }
 
-resource "aws_route_table_association" "rt-association_eks_subnet_0" {
-  subnet_id      = aws_subnet.eks-subnet-0.id
-  route_table_id = aws_route_table.rt_public_dev_main.id
+resource "aws_route_table_association" "rt-association_private_subnet_eks_1_dev_main" {
+  subnet_id      = aws_subnet.eks-subnet-1_private_dev_main.id
+  route_table_id = aws_route_table.rt_eks_private_dev_main.id
 }
 
-resource "aws_subnet" "eks-subnet-1" {
+resource "aws_subnet" "eks-subnet-2_private_dev_main" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
   cidr_block              = "10.0.4.0/24"
   availability_zone       = "${var.region}${var.availability-zone_second}"
@@ -48,8 +69,8 @@ resource "aws_subnet" "eks-subnet-1" {
 }
 
 resource "aws_route_table_association" "rt-association_private_subnet_eks_2_dev_main" {
-  subnet_id      = aws_subnet.eks-subnet-1.id
-  route_table_id = aws_route_table.rt_public_dev_main.id
+  subnet_id      = aws_subnet.eks-subnet-2_private_dev_main.id
+  route_table_id = aws_route_table.rt_eks_private_dev_main.id
 }
 
 # control plane
@@ -115,7 +136,7 @@ resource "aws_eks_cluster" "main" {
 
   vpc_config {
     security_group_ids = [aws_security_group.sg-eks.id]
-    subnet_ids         = [aws_subnet.eks-subnet-0.id, aws_subnet.eks-subnet-1.id]
+    subnet_ids         = [aws_subnet.eks-subnet-1_private_dev_main.id, aws_subnet.eks-subnet-2_private_dev_main.id]
     # kubectl is accessable from outside
     endpoint_private_access = false
     endpoint_public_access  = true
@@ -194,31 +215,124 @@ resource "aws_security_group" "main-node" {
   }
 }
 
+resource "aws_security_group_rule" "main-node-ingress-self" {
+  type              = "ingress"
+  description       = "Allow node to communicate with each other"
+  from_port         = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.main-node.id
+  to_port           = 65535
+  cidr_blocks = [
+    "10.0.0.0/16",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+  ]
+}
 
-resource "aws_eks_node_group" "eks-nodegroup-0" {
-  cluster_name    = var.cluster_name
-  node_group_name = "eks-node-group-0"
-  node_role_arn   = aws_iam_role.main-node.arn
-  subnet_ids      = [aws_subnet.eks-subnet-0.id, aws_subnet.eks-subnet-1.id]
-  ami_type       = "AL2_x86_64"
-  disk_size      = "20"
-  instance_types = ["t3.micro"]
-  # ssh is open to the internet -> see https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group
-  remote_access {
-    ec2_ssh_key = aws_key_pair.ssh.key_name
+### somehow not needed, since above sg-rule allows traffic ingress from all internal
+### traffic, but actually there should be specified only the worker specific subnets
+### and maybe this current general setting is changed to the more specify setting in the
+### furture, so this rule is written because of this reason
+resource "aws_security_group_rule" "main-node-ingress-cluster" {
+  type              = "ingress"
+  description       = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
+  from_port         = 1025
+  protocol          = "tcp"
+  security_group_id = aws_security_group.main-node.id
+  # docu: (Optional) The security group id to allow access to/from, depending on the type. Cannot be specified with cidr_blocks and self
+  source_security_group_id = aws_security_group.sg-eks.id
+  to_port                  = 65535
+}
+
+## setup launch-template
+resource "aws_launch_template" "eks_launch_template" {
+  name = "eks_launch_template"
+
+  vpc_security_group_ids = [aws_security_group.main-node.id]
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      volume_size = 20
+      volume_type = "gp2"
+    }
   }
+
+  # has to be specified, else no connection to cluster
+  # how to get?
+  #   - https://docs.aws.amazon.com/de_de/eks/latest/userguide/retrieve-ami-id.html
+  #   - https://docs.aws.amazon.com/de_de/eks/latest/userguide/eks-optimized-ami.html
+  # aws ssm get-parameter --name /aws/service/eks/optimized-ami/1.18/amazon-linux-2/recommended/image_id --region "eu-central-1" --query "Parameter.Value" --output text
+  image_id      = "ami-0a3d7ac8c4302b317"
+  instance_type = "t3.micro"
+  key_name      = aws_key_pair.ssh.key_name
+  user_data = base64encode(<<EOF
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+
+--==BOUNDARY==
+Content-Type: text/x-shellscript; charset="us-ascii"
+
+#!/bin/bash
+/etc/eks/bootstrap.sh --apiserver-endpoint "${aws_eks_cluster.main.endpoint}" --use-max-pods false "${var.cluster_name}"
+
+--==BOUNDARY==--
+  EOF
+  )
+
+  tag_specifications {
+    resource_type = "instance"
+
+    tags = {
+      Name = "EKS-MANAGED-NODE"
+    }
+  }
+}
+#  --b64-cluster-ca "${aws_eks_cluster.main.certificate_authority}" 
+
+# setup nodegroup with explicit launch-configuration to get access to the userdata-attribut to change bootstrap options
+resource "aws_eks_node_group" "demo" {
+  cluster_name    = var.cluster_name
+  node_group_name = "demo-group-1"
+  node_role_arn   = aws_iam_role.main-node.arn
+  subnet_ids      = [aws_subnet.eks-subnet-1_private_dev_main.id, aws_subnet.eks-subnet-2_private_dev_main.id]
+
   scaling_config {
     desired_size = 1
     max_size     = 1
     min_size     = 1
   }
-  tags = {
-    Name = "eks-nodegroup-0"
+
+  launch_template {
+    name    = aws_launch_template.eks_launch_template.name
+    version = aws_launch_template.eks_launch_template.latest_version
   }
+
+
   depends_on = [
     aws_iam_role_policy_attachment.main-node-AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.main-node-AmazonEKS_CNI_Policy,
     aws_iam_role_policy_attachment.main-node-AmazonEC2ContainerRegistryReadOnly,
     aws_iam_role_policy_attachment.main-node-AmazonEC2FullAccess,
+    # aws_iam_role_policy_attachment.main-node-alb-ingress_policy,
+    aws_launch_template.eks_launch_template,
+    aws_eks_cluster.main
   ]
+
+  tags = {
+    Name = "eks-node-group-1"
+  }
+}
+
+
+
+data "aws_eks_cluster_auth" "main" {
+  name = aws_eks_cluster.main.name
+}
+
+provider "kubernetes" {
+  host                   = aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.main.token
 }

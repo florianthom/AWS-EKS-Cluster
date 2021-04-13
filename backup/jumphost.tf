@@ -16,6 +16,8 @@ resource "aws_subnet" "subnet_public" {
   availability_zone = "${var.region}${var.availability-zone}"
   map_public_ip_on_launch = "true"
   tags = {
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/role/elb"                    = "1"
     iac_environment                             = "development"
   }
 }
@@ -82,7 +84,7 @@ resource "aws_instance" "ubuntu-jumphost" {
     device_index         = 0
     network_interface_id = aws_network_interface.nic-jumphost.id
   }
-  # iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   tags = {
     "environment" = "development"
   }
