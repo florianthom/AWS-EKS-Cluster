@@ -43,8 +43,12 @@ variable "cluster_name" {
   default     = "personal-website-eks-cluster-0"
 }
 
-# define output
 output "eip-jumphost" {
   value       = aws_eip.eip_jumphost.public_ip
+  description = "The public IP of the eip"
+}
+
+output "eip-kubernetes-ingress" {
+  value        = aws_eip.eip_kubernetes_ingress.public_ip
   description = "The public IP of the eip"
 }

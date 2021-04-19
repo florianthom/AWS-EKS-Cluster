@@ -1,14 +1,3 @@
-# create eip for the webserver
-resource "aws_eip" "eip_jumphost" {
-  vpc                       = true
-  network_interface         = aws_network_interface.nic-jumphost.id
-  associate_with_private_ip = var.jumphost-private-ip
-  depends_on                = [aws_internet_gateway.gw_dev_main]
-  tags = {
-    "environment" = "development"
-  }
-}
-
 # create subnets inside the vpc
 resource "aws_subnet" "subnet_public" {
   vpc_id            = aws_vpc.vpc_dev_main.id

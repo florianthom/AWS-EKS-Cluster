@@ -3,7 +3,6 @@ kind: Ingress
 metadata:
   name: personal-website-frontend-ingress
   annotations:
-    # use the shared ingress-nginx
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:

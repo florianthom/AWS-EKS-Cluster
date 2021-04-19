@@ -121,7 +121,7 @@ kubectl get services -n ingress-nginx
 ```
 
 ## Additional optional related commands
- - install ingress-nginx
+ - install ingress-nginx-controller
 ```
 # https://kubernetes.github.io/ingress-nginx/deploy/#aws
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.45.0/deploy/static/provider/aws/deploy.yaml
