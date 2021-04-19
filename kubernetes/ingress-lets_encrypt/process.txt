@@ -1,0 +1,81 @@
+Short version:
+install website
+install nginx-ingress-controller
+install certmanager
+(re-install) ingress-resource
+install cluster-issuer (pay attention to whether use staging or prod)
+
+==========
+
+Long version and nice hints:
+
+lets encrypt:
+
+1. install website
+2. install nginx-ingress für aws
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.45.0/deploy/static/provider/aws/deploy.yaml
+3. deploy ingress ressource
+3.5 check ingress ip (to enter this ip at cloudflare) with kubectl get ingress
+4. install cert manager
+	4.1 using helm (here not)
+	4.2 using manifest file (here)
+		kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.0/cert-manager.yaml
+		verify: kubectl get pods --namespace cert-manager
+
+Note that if you’re using this document as a guide to configure cert-manager for your own Issuer, you must create the Issuers in the same namespace as your Ingress resources by adding -n my-namespace to your kubectl create commands. Your other option is to replace your Issuers with ClusterIssuers. ClusterIssuer resources apply across all Ingress resources in your cluster and don’t have this namespace-matching requirement.
+
+5. create issure
+	2. kinds:
+		-cluster issure (issures certs for requests across namespaces)
+			(here)
+		- issure (issues certs for requests in one namespace -> that means the ingress has to be in the same namespace)
+	- difference between prod and staging important
+		reason: prod has strict rate limits -> you hit them fast in development
+		-> maybe start with staging
+	- apply cluster issure...
+	- verify: kubectl describe clusterissuers letsencrypt-staging
+6. adjust ingress with annotation
+	- wie insgesamt testen?
+		- man kann bei cloudflare unter tls/ssl off einstellen, dann funktioniert aber die komoplette seite nicht mehr so richtig
+			- keine Ahnung warum
+		- wie also testen?
+			- cluster issuer löschen
+			- ingress-ressource löschen
+			- certificate löschen
+			- ingress-resource annotation+secret auskommentieren
+			- ingress-ressource installieren (/applyen)
+			- cloudflare auf full strict -> jetzt kommen: invalid ssl-certificate
+				- wenn lets-encrypt funcitoniert und man auf full-strcit stellt, muss man ca 1min warten und funktioniert es
+	- pay attention: very important to write exactly the annotation you need (cluster-issure vs issure and staging vs prod)
+		here: cluster issure + staging
+	- verify:
+		- kubectl get certificate -> muss true stehen
+		- kubectl describe certificate letsencrypt-staging
+			- ganz unten muss stehen: certificate successfully issued
+		- kubectl describe secret letsencrypt-staging
+	- problems (e.g. with cloudflare): https://stackoverflow.com/a/65932891
+	- rollback:
+		- remove ingress-resource + cluster-issuer + remove secret
+			kubectl delete -f "ingress-resource"
+			kubectl delete -f cluster-issererre...
+			kubectl delete secret quickstart-example-tls
+	- AUFPASSEN ICH GLAUBE DIE REIHENFOLGE SPIELT EINE ROLLE
+		- MAN MUSS GLAUBE ICH IMMER ERST DEN INGRESS INSTALLIEREN UND DANN DEN CLUSTER ISSUER
+	- WENN ALLES FUNKTIONIERT GIBT KUBECTL GET CERTIFICATES SOFORT TRUE WIEDER (KEINE LANGE WARTEZEIT)
+	- wenn man von stagin auf prod wechseln möchte:
+		- delete cluster issuer
+		- delete ingress resource
+		- delete secert
+		- change manifest of ingress resource (die annotation), sodass der prod-cluster-issuer getargetet wird
+		- installieren von 1. ingress 2. cluster issuer
+		
+
+
+
+nochmal ingress-ressource löschen und nochmmal testen mit secret, dann eventuell weitermachen mit prod-issuer einführen + altes secret löschen
+
+letsencrypt-clusterissuer-personalwebsite-prod
+letsencrypt-clusterissuer-personalwebsite-prod
+
+https://cert-manager.io/docs/tutorials/acme/ingress/
+https://dev.to/chrisme/setting-up-nginx-ingress-w-automatically-generated-letsencrypt-certificates-on-kubernetes-4f1k
