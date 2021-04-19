@@ -1,0 +1,23 @@
+general:
+	install website
+
+
+ingress + lets_encrypt
+	install nginx-ingress-controller (ZUGESCHNITTEEN AUF AWS)
+	install certmanager
+	(re-install) ingress-resource
+	install cluster-issuer (pay attention to whether use staging or prod)
+		(- dadurch müsste automatisch das zertifikat erstellt werden, welches dann automatisch von der ingress-rousource automatisch bemerkt und benutzt werden sollte)
+
+
+
+metrics server
+	install metrics server (ZUGESCHNITTEN AWS)
+
+dashboard
+	create dashboard
+	create admin-service-account
+
+helm
+	install locally through apt
+	add stable repository
