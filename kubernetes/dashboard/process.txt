@@ -1,0 +1,19 @@
+create dashboard
+	-  apply stored command in dashboard-folder
+
+create admin service account to access dashboard
+	- the following created user has super user priviliges on the cluster, pay attention
+	- kubectl apply -f service-account folder
+
+
+
+get secret of admin-service-account
+	- kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep eks-admin | awk '{print $1}')
+	- copy token
+start kubectl proxy
+	- kubectl proxy
+open dashboard
+	- open http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login
+	- not open 127.0.0.1:8001 (there you get only a json)
+enter token + sign in
+view cluster
