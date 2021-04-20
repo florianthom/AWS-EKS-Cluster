@@ -1,6 +1,6 @@
 general:
 	install website
-
+		()
 
 ingress + lets_encrypt
 	install nginx-ingress-controller (ZUGESCHNITTEEN AUF AWS)

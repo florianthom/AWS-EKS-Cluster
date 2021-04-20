@@ -1,23 +1,33 @@
-# eks
-# curl -LO https://dl.k8s.io/release/v1.18.0/bin/linux/amd64/kubectl
 # aws eks --region "eu-central-1" update-kubeconfig --name "personal-website-eks-cluster-0"
 # ssh beachten: default user of amazon-eks-optimized-ami: ec2-user
-# terraform output ssh_private_key_pem > ../keys/sshKey/ssh-key.pem
-# check cni-version: kubectl describe daemonset aws-node --namespace kube-system | grep Image | cut -d "/" -f 2
 # eks plattform version is listed in webconsole (here eks.3)
+# eks vpc guide: https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
+# recommends:
+#   2 az
+#   each az 2 subnets: 1 public + 1 private (so that loadbalancer can loadbalance to private too)
+#   
 
 output "cluster_name" {
   description = "Kubernetes Cluster Name"
   value       = var.cluster_name
 }
 
+# i guess needed for private subnet in eks to be able to connect to nat
+# since here no nat -> set to false
 variable "public_ip" {
   type        = bool
   description = "Indicates whether the subnets map public ips on instance-launches"
-  default     = true
+  default     = false
 }
 
 #subnets
+
+# general
+# The instances in the public subnet can send outbound traffic directly to the Internet, whereas the instances
+# in the private subnet can't. Instead, the instances in the private subnet can access the Internet by using a network address
+# translation (NAT) gateway that resides in the public subnet. The database servers can connect to the Internet for software updates
+# using the NAT gateway, but the Internet cannot establish connections to the database servers.
+
 # tags are important, see
 # https://aws.amazon.com/premiumsupport/knowledge-center/eks-vpc-subnet-discovery/
 # https://github.com/kubernetes/kubernetes/issues/29298#issuecomment-356826381
@@ -117,6 +127,7 @@ resource "aws_eks_cluster" "eks_control_plane" {
     security_group_ids = [aws_security_group.eks_sg_control_plan_0.id]
     subnet_ids         = [aws_subnet.eks_subnet_0.id, aws_subnet.eks_subnet_1.id]
     # kubectl is accessable from outside
+    # this is the default setting
     endpoint_private_access = false
     endpoint_public_access  = true
   }
