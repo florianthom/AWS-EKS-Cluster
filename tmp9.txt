@@ -12,3 +12,4 @@ kubectl cluster-info
 kubectl config get-contexts
 kubectl config use-context context-name
 nslookup
+
