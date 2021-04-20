@@ -38,7 +38,10 @@ resource "aws_route_table" "rt_eks_private_dev_main" {
 }
 
 
-#subnets
+# subnets
+# tags are important, see
+# https://aws.amazon.com/premiumsupport/knowledge-center/eks-vpc-subnet-discovery/
+# https://github.com/kubernetes/kubernetes/issues/29298#issuecomment-356826381
 resource "aws_subnet" "eks-subnet-1_private_dev_main" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
   cidr_block              = "10.0.3.0/24"

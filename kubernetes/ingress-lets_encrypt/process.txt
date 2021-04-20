@@ -12,7 +12,7 @@ Long version and nice hints:
 lets encrypt:
 
 1. install website
-2. install nginx-ingress für aws
+2. install nginx-ingress-controller für aws
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.45.0/deploy/static/provider/aws/deploy.yaml
 3. deploy ingress ressource
 3.5 check ingress ip (to enter this ip at cloudflare) with kubectl get ingress
@@ -20,11 +20,11 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 	4.1 using helm (here not)
 	4.2 using manifest file (here)
 		kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.0/cert-manager.yaml
-		verify: kubectl get pods --namespace cert-manager
+			verify: kubectl get pods --namespace cert-manager
 
 Note that if you’re using this document as a guide to configure cert-manager for your own Issuer, you must create the Issuers in the same namespace as your Ingress resources by adding -n my-namespace to your kubectl create commands. Your other option is to replace your Issuers with ClusterIssuers. ClusterIssuer resources apply across all Ingress resources in your cluster and don’t have this namespace-matching requirement.
 
-5. create issure
+5. create issuer
 	2. kinds:
 		-cluster issure (issures certs for requests across namespaces)
 			(here)

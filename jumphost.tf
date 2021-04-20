@@ -1,11 +1,11 @@
 # create subnets inside the vpc
 resource "aws_subnet" "subnet_public" {
-  vpc_id            = aws_vpc.vpc_dev_main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "${var.region}${var.availability-zone}"
+  vpc_id                  = aws_vpc.vpc_dev_main.id
+  cidr_block              = "10.0.0.0/24"
+  availability_zone       = "${var.region}${var.availability-zone}"
   map_public_ip_on_launch = "true"
   tags = {
-    iac_environment                             = "development"
+    environment = var.env
   }
 }
 
@@ -17,9 +17,15 @@ resource "aws_route_table_association" "rt-association_public_subnet_dev_main" {
 }
 
 
-# create a general secruity group
-#   are the configuration files for the firewall of the ec2
-resource "aws_security_group" "sg-public-subnet_dev_main" {
+# the firewall of the ec2
+# -1 is a possible value for from_port, to_port, protocol,
+#   = all devices which have this security group attached can communicate with each other
+# 0 is a possible value for from_port, to_port, protocol
+#   = open for all
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html
+# so currently other nodes with this sg can be ssh-ed from all + ping (only each other)
+#   since no other worker exists (with this sg), the icmp-part is useless
+resource "aws_security_group" "sg_public_subnet_dev_main" {
   name        = "allow_web_traffic_new"
   description = "Allow web inbound traffic"
   vpc_id      = aws_vpc.vpc_dev_main.id
@@ -30,7 +36,6 @@ resource "aws_security_group" "sg-public-subnet_dev_main" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     description = "ICMP"
     from_port   = -1
@@ -38,7 +43,6 @@ resource "aws_security_group" "sg-public-subnet_dev_main" {
     protocol    = "icmp"
     cidr_blocks = ["10.0.0.0/16"]
   }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -46,18 +50,18 @@ resource "aws_security_group" "sg-public-subnet_dev_main" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-    Name          = "sg-public-subnet"
-    "environment" = "development"
+    Name        = "sg-public-subnet"
+    environment = var.env
   }
 }
 
 # network-interface
 resource "aws_network_interface" "nic-jumphost" {
-  subnet_id = aws_subnet.subnet_public.id
-  private_ips     = [var.jumphost-private-ip]
-  security_groups = [aws_security_group.sg-public-subnet_dev_main.id]
+  subnet_id       = aws_subnet.subnet_public.id
+  private_ips     = ["10.0.0.10"]
+  security_groups = [aws_security_group.sg_public_subnet_dev_main.id]
   tags = {
-    "environment" = "development"
+    environment = var.env
   }
 }
 
@@ -73,6 +77,6 @@ resource "aws_instance" "ubuntu-jumphost" {
   }
   # iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   tags = {
-    "environment" = "development"
+    environment = var.env
   }
 }

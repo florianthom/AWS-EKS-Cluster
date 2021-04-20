@@ -36,7 +36,7 @@ provider "aws" {
 
 
 resource "aws_key_pair" "ssh" {
-  key_name = "ssh-key-terraform"
+  key_name   = "ssh-key-terraform"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDYOK1+NO7ihTuhMItqdMSmi86YduoJEhz0sHlQVFmVztf1PZLavmgkxBUto9F1UC79YX7f1aQHHynMZRrVs2fIrKIqnRmoo39X28q7PlAR+584afgxsM0S9fnmY6YU/oqQp7jY53bd9AV0HzGe1z8agZMWYI3vHhPUIGZDGVBy86BtCDwh7Wrdn3k9qqXsW9IOQFAK9wAhRpCaGY4xmoSl0ULKGcuxJoJNfxAsULgVkUcTcZkflwRsFm9HZy6MQ81VENvcgr1aUmh2XFNJrQX3Xa/eDMQni7v7BEl1hLkFlx30aKF+uMEbb6rJ/jk972LPjsMB8hVklRsf2sPHCNjt flo@flo-laptop"
 }
 
@@ -44,10 +44,9 @@ resource "aws_key_pair" "ssh" {
 resource "aws_vpc" "vpc_dev_main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support = true
+  enable_dns_support   = true
   tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    iac_environment                             = "development"
+    environment = var.env
   }
 }
 
@@ -57,14 +56,13 @@ resource "aws_vpc" "vpc_dev_main" {
 resource "aws_internet_gateway" "gw_dev_main" {
   vpc_id = aws_vpc.vpc_dev_main.id
   tags = {
-    "environment" = "development"
+    environment = var.env
   }
 }
 
 # adds a routing table to the vpc (there is already a "main-routing-table")
 #   one for public traffic
 #   one for private traffic (actually not needed for now since main-routing-table exists)
-
 resource "aws_route_table" "rt_public_dev_main" {
   vpc_id = aws_vpc.vpc_dev_main.id
 
@@ -78,7 +76,7 @@ resource "aws_route_table" "rt_public_dev_main" {
     gateway_id      = aws_internet_gateway.gw_dev_main.id
   }
   tags = {
-    Name          = "public subnet rt"
-    "environment" = "development"
+    Name        = "public subnet rt"
+    environment = var.env
   }
 }

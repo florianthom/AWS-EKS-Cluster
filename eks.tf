@@ -18,44 +18,44 @@ variable "public_ip" {
 }
 
 #subnets
-resource "aws_subnet" "eks-subnet-0" {
+# tags are important, see
+# https://aws.amazon.com/premiumsupport/knowledge-center/eks-vpc-subnet-discovery/
+# https://github.com/kubernetes/kubernetes/issues/29298#issuecomment-356826381
+resource "aws_subnet" "eks_subnet_0" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
-  cidr_block              = "10.0.3.0/24"
+  cidr_block              = "10.0.1.0/24"
   availability_zone       = "${var.region}${var.availability-zone}"
   map_public_ip_on_launch = var.public_ip
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    "kubernetes.io/role/internal-elb"           = "1"
-    iac_environment                             = "development"
+    "kubernetes.io/role/elb"           = "1"
   }
 }
 
 resource "aws_route_table_association" "rt-association_eks_subnet_0" {
-  subnet_id      = aws_subnet.eks-subnet-0.id
+  subnet_id      = aws_subnet.eks_subnet_0.id
   route_table_id = aws_route_table.rt_public_dev_main.id
 }
 
-resource "aws_subnet" "eks-subnet-1" {
+resource "aws_subnet" "eks_subnet_1" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
-  cidr_block              = "10.0.4.0/24"
+  cidr_block              = "10.0.2.0/24"
   availability_zone       = "${var.region}${var.availability-zone_second}"
   map_public_ip_on_launch = var.public_ip
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    "kubernetes.io/role/internal-elb"           = "1"
-    iac_environment                             = "development"
+    "kubernetes.io/role/elb"           = "1"
   }
 }
 
 resource "aws_route_table_association" "rt-association_private_subnet_eks_2_dev_main" {
-  subnet_id      = aws_subnet.eks-subnet-1.id
+  subnet_id      = aws_subnet.eks_subnet_1.id
   route_table_id = aws_route_table.rt_public_dev_main.id
 }
 
 # control plane
-## control plane main role
-resource "aws_iam_role" "eks-main-role" {
-  name               = "eks-main-role"
+resource "aws_iam_role" "eks_iam_role_assume_role" {
+  name               = "eks_iam_role_assume_role"
   assume_role_policy = <<POLICY
 {
   "Version": "2012-10-17",
@@ -73,20 +73,21 @@ POLICY
 }
 
 ## main-role policy-attachments
-resource "aws_iam_role_policy_attachment" "main-cluster-AmazonEKSClusterPolicy" {
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks-main-role.name
+  role       = aws_iam_role.eks_iam_role_assume_role.name
 }
 
-resource "aws_iam_role_policy_attachment" "main-cluster-AmazonEKSServicePolicy" {
+resource "aws_iam_role_policy_attachment" "eks_service_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
-  role       = aws_iam_role.eks-main-role.name
+  role       = aws_iam_role.eks_iam_role_assume_role.name
 }
 
-## eks secruity group
-resource "aws_security_group" "sg-eks" {
-  name        = "terraform-eks"
-  description = "Cluster communication with worker nodes"
+# This security group controls networking access to the Kubernetes masters.
+# Needs to be configured also with an ingress rule to allow traffic from the worker nodes.
+resource "aws_security_group" "eks_sg_control_plan_0" {
+  name        = "eks_sg_control_plan_0"
+  description = "Allow communication between control plane and workers"
   vpc_id      = aws_vpc.vpc_dev_main.id
 
   egress {
@@ -109,28 +110,30 @@ resource "aws_security_group" "sg-eks" {
 }
 
 ## create control plane
-resource "aws_eks_cluster" "main" {
+resource "aws_eks_cluster" "eks_control_plane" {
   name     = var.cluster_name
-  role_arn = aws_iam_role.eks-main-role.arn
-
+  role_arn = aws_iam_role.eks_iam_role_assume_role.arn
   vpc_config {
-    security_group_ids = [aws_security_group.sg-eks.id]
-    subnet_ids         = [aws_subnet.eks-subnet-0.id, aws_subnet.eks-subnet-1.id]
+    security_group_ids = [aws_security_group.eks_sg_control_plan_0.id]
+    subnet_ids         = [aws_subnet.eks_subnet_0.id, aws_subnet.eks_subnet_1.id]
     # kubectl is accessable from outside
     endpoint_private_access = false
     endpoint_public_access  = true
   }
-
   depends_on = [
-    aws_iam_role_policy_attachment.main-cluster-AmazonEKSClusterPolicy,
-    aws_iam_role_policy_attachment.main-cluster-AmazonEKSServicePolicy,
+    aws_iam_role_policy_attachment.eks_cluster_policy,
+    aws_iam_role_policy_attachment.eks_service_policy,
   ]
+  tags = {
+    Name        = "eks_control_plane"
+    environment = var.env
+  }
 }
 
 # worker node setup
 ## worker worker-nodes-main-role
-resource "aws_iam_role" "main-node" {
-  name = "terraform-eks-main-node"
+resource "aws_iam_role" "eks_iam_role_0" {
+  name = "eks_iam_role_0"
 
   assume_role_policy = <<POLICY
 {
@@ -149,60 +152,56 @@ POLICY
 }
 
 ## policies for worker-nodes-main-role
-resource "aws_iam_role_policy_attachment" "main-node-AmazonEKSWorkerNodePolicy" {
+resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.main-node.name
+  role       = aws_iam_role.eks_iam_role_0.name
 }
 
-resource "aws_iam_role_policy_attachment" "main-node-AmazonEKS_CNI_Policy" {
+resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.main-node.name
+  role       = aws_iam_role.eks_iam_role_0.name
 }
 
-resource "aws_iam_role_policy_attachment" "main-node-AmazonEC2ContainerRegistryReadOnly" {
+resource "aws_iam_role_policy_attachment" "eks_ec2_container_registry_readonly_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.main-node.name
+  role       = aws_iam_role.eks_iam_role_0.name
 }
 
-resource "aws_iam_role_policy_attachment" "main-node-AmazonEC2FullAccess" {
+resource "aws_iam_role_policy_attachment" "eks_ec2_full_access_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-  role       = aws_iam_role.main-node.name
+  role       = aws_iam_role.eks_iam_role_0.name
 }
 
 # resource "aws_iam_role_policy_attachment" "main-node-alb-ingress_policy" {
 #   policy_arn = aws_iam_policy.alb-ingress.arn
-#   role       = aws_iam_role.main-node.name
+#   role       = aws_iam_role.eks_iam_role_0.name
 # }
 
 
-## setup instance profile since the launch-config takes a instance-profile and no role
-resource "aws_iam_instance_profile" "main-node" {
-  name = "terraform-eks-main"
-  role = aws_iam_role.main-node.name
-}
-
-## specify workers firewall
-resource "aws_security_group" "main-node" {
-  name        = "terraform-eks-main-node"
-  description = "Security group for all nodes in the cluster"
+# This security group controls networking access to the Kubernetes worker nodes.
+resource "aws_security_group" "eks_sg_internode_communication_0" {
+  name        = "eks_sg_nodes_0"
+  description = "allow nodes to communicate with each other"
   vpc_id      = aws_vpc.vpc_dev_main.id
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
+    description = "allow nodes to communicate with each other"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 
-resource "aws_eks_node_group" "eks-nodegroup-0" {
+resource "aws_eks_node_group" "eks_nodegroup_0" {
   cluster_name    = var.cluster_name
   node_group_name = "eks-node-group-0"
-  node_role_arn   = aws_iam_role.main-node.arn
-  subnet_ids      = [aws_subnet.eks-subnet-0.id, aws_subnet.eks-subnet-1.id]
-  ami_type       = "AL2_x86_64"
-  disk_size      = "20"
-  instance_types = ["m5a.large"] # maybe without a (intel instead of amd) better
+  node_role_arn   = aws_iam_role.eks_iam_role_0.arn
+  subnet_ids      = [aws_subnet.eks_subnet_0.id, aws_subnet.eks_subnet_1.id]
+  ami_type        = "AL2_x86_64"
+  disk_size       = "20"
+  # a = amd
+  instance_types = ["m5a.large"]
   # ssh is open to the internet -> see https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group
   remote_access {
     ec2_ssh_key = aws_key_pair.ssh.key_name
@@ -213,12 +212,14 @@ resource "aws_eks_node_group" "eks-nodegroup-0" {
     min_size     = 1
   }
   tags = {
-    Name = "eks-nodegroup-0"
+    Name        = "eks_nodegroup_0"
+    environment = var.env
   }
   depends_on = [
-    aws_iam_role_policy_attachment.main-node-AmazonEKSWorkerNodePolicy,
-    aws_iam_role_policy_attachment.main-node-AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.main-node-AmazonEC2ContainerRegistryReadOnly,
-    aws_iam_role_policy_attachment.main-node-AmazonEC2FullAccess,
+    aws_eks_cluster.eks_control_plane,
+    aws_iam_role_policy_attachment.eks_worker_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.eks_ec2_container_registry_readonly_policy,
+    aws_iam_role_policy_attachment.eks_ec2_full_access_policy,
   ]
 }

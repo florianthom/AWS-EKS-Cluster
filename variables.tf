@@ -1,8 +1,7 @@
-#define variables
-variable "server_port_http" {
-  description = "The port the server will use for HTTP requests"
-  type        = number
-  default     = 80
+variable "env" {
+  description = "Current environment"
+  type        = string
+  default     = "production"
 }
 
 variable "region" {
@@ -15,12 +14,6 @@ variable "availability-zone" {
   description = "AWS primary availability-zone"
   type        = string
   default     = "a"
-}
-
-variable "jumphost-private-ip" {
-  description = "private internal ip of jumphost"
-  type = string
-  default = "10.0.1.10"
 }
 
 # for eks we need 2 subnets, each in a different az
@@ -45,10 +38,5 @@ variable "cluster_name" {
 
 output "eip-jumphost" {
   value       = aws_eip.eip_jumphost.public_ip
-  description = "The public IP of the eip"
-}
-
-output "eip-kubernetes-ingress" {
-  value        = aws_eip.eip_kubernetes_ingress.public_ip
   description = "The public IP of the eip"
 }
