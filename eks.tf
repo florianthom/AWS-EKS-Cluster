@@ -5,19 +5,19 @@
 # recommends:
 #   2 az
 #   each az 2 subnets: 1 public + 1 private (so that loadbalancer can loadbalance to private too)
-#   
+#   each az 1 nat (for the private subnet) with 1 eip each
+#   public subnet = map_public_ip_on_launch=true + connected to routing table with internet-gateway
+#   private subnet = map_public_ip_on_launch=false + connected to routing table which is connected to nat with internet gateway
+#
+#   to change: add privatesubnets, add routing_tables, add routing_table_associations, add nats, add eips
+#   how?
+#     see cloudformation template on https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
+#     see a terraform related example: https://www.codementor.io/@slavko/kubernetes-cluster-on-aws-eks-lecygk6rl
+#   here not realized since nat is expensiv (especially 2)
 
 output "cluster_name" {
   description = "Kubernetes Cluster Name"
   value       = var.cluster_name
-}
-
-# i guess needed for private subnet in eks to be able to connect to nat
-# since here no nat -> set to false
-variable "public_ip" {
-  type        = bool
-  description = "Indicates whether the subnets map public ips on instance-launches"
-  default     = false
 }
 
 #subnets
@@ -35,7 +35,7 @@ resource "aws_subnet" "eks_subnet_0" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "${var.region}${var.availability-zone}"
-  map_public_ip_on_launch = var.public_ip
+  map_public_ip_on_launch = true
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"           = "1"
@@ -51,7 +51,7 @@ resource "aws_subnet" "eks_subnet_1" {
   vpc_id                  = aws_vpc.vpc_dev_main.id
   cidr_block              = "10.0.2.0/24"
   availability_zone       = "${var.region}${var.availability-zone_second}"
-  map_public_ip_on_launch = var.public_ip
+  map_public_ip_on_launch = true
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"           = "1"

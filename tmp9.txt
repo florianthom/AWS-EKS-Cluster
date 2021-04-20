@@ -1,4 +1,6 @@
 secruity betrachten
+
+
 zusätzliche sachen wie s3 wieder hinzufügen
 kubernetes automatisieren
 	- ingress controller
