@@ -1,7 +1,7 @@
 # AWS-Cluster-PW
 This repository represents an attempt to create a cluster based on the eks-service of the aws-cloud. This cluster was intended to be used as a plattform for my personal-website (pw). This cluster was build up via the infrastructure-as-code approach (terraform). The code has very little requirements. So, it contains almost all needed parts for a cluster on its own: ssh-key-generation, creation of several admins, creation of vpc with several subnets with several hosts (including a host intended as a bastion-host), s3 blog-storage and s3-vpc-endpoint for it, eks-hosts and the corresponding eks-vpc-endpoint in addition with a good amount of secruity policies. A general grafical overview is given below.
 
-![alt text](.github/images/infrastructure.png)
+![alt text](.github/images/infrastructure_v2.png)
 
 
 ## Learned
