@@ -91,6 +91,21 @@ aws sts get-caller-identity
 
 ### kubernetes
 #### kubernetes-general
+- show general cluster-informations
+```
+ kubectl cluster-info
+```
+
+- print current kubectl-context
+```
+ kubectl config get-contexts
+```
+
+- switch current kubectl-context
+```
+ kubectl config use-context context-name
+```
+
 - list all pods across the kubernetes-namespaces
 ```
  kubectl get pods --all-namespaces -o wide
