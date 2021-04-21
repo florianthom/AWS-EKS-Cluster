@@ -1,19 +1,10 @@
 # aws eks --region "eu-central-1" update-kubeconfig --name "personal-website-eks-cluster-0"
 # ssh beachten: default user of amazon-eks-optimized-ami: ec2-user
 # eks plattform version is listed in webconsole (here eks.3)
-# eks vpc guide: https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
-# recommends:
-#   2 az
-#   each az 2 subnets: 1 public + 1 private (so that loadbalancer can loadbalance to private too)
-#   each az 1 nat (for the private subnet) with 1 eip each
-#   public subnet = map_public_ip_on_launch=true + connected to routing table with internet-gateway
-#   private subnet = map_public_ip_on_launch=false + connected to routing table which is connected to nat (must have to make private subnet be able to communicate with controle plane) (with internet gateway -> i dont know if that is included on nat)
-#
-#   to change: add private subnets, add subnets to eks, add routing_tables, add routing_table_associations, add nats, add eips, google a way to submit specific container / pods only to private subnets/nodes in a provate subnet
-#   how?
-#     see cloudformation template on https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
-#     see a terraform related example: https://www.codementor.io/@slavko/kubernetes-cluster-on-aws-eks-lecygk6rl
-#   here not realized since nat is expensiv (especially 2)
+
+# traditional, general and recommended architecture see work-file at the end
+# https://docs.google.com/document/d/1DTcB9U96oek2tyPTgPJWxOWZ1kEjzKMjrBzd7PYh-HM/edit?usp=sharing
+# (here not realized)
 
 output "cluster_name" {
   description = "Kubernetes Cluster Name"

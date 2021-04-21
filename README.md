@@ -198,3 +198,5 @@ The very granular cost-approximation of the given infrastructure is somewhere ar
  - introduction to calico: https://luktom.net/en/e1715-how-to-and-why-replace-aws-cni-with-calico-on-aws-eks-cluster
  - eks-default-cni vs eks-custom-cni: https://medium.com/faun/choosing-your-cni-with-aws-eks-vpc-cni-or-calico-1ee6229297c5
  - additional sources: additionalInformations.pdf (unfortunatly notes are mostly in german-lenguage)
+   - is frequently updated
+   - original version see [here](https://docs.google.com/document/d/1DTcB9U96oek2tyPTgPJWxOWZ1kEjzKMjrBzd7PYh-HM/edit?usp=sharing)
