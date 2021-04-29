@@ -1,6 +1,7 @@
 general:
-	install website
-		()
+	install website (in frontend repository)
+	install secret (in backend repository)
+	install backend service (in backend repository)
 
 ingress + lets_encrypt
 	install nginx-ingress-controller (ZUGESCHNITTEEN AUF AWS)

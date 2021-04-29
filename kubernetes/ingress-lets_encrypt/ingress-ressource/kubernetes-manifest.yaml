@@ -27,3 +27,11 @@ spec:
         backend:
           serviceName: personal-website-frontend-service
           servicePort: 3000
+      - path: /api
+        backend:
+          serviceName: personal-website-backend-service
+          servicePort: 4000
+      - path: /swagger
+        backend:
+          serviceName: personal-website-backend-service
+          servicePort: 4000
