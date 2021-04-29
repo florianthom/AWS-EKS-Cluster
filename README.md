@@ -70,7 +70,7 @@ This section describes important commands, mostly important for development purp
 ### aws
  - configure kubectl according the created cluster / setup connection between kubectl and cluster
 ```
- aws eks --region "eu-central-1" update-kubeconfig --name "test-eks-cluster-1"
+ aws eks --region "eu-central-1" update-kubeconfig --name "personal-website-eks-cluster-0"
 ```
 
  - get current aws-cli-identity
