@@ -29,7 +29,7 @@ resource "aws_subnet" "eks_subnet_0" {
   map_public_ip_on_launch = true
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"           = "1"
+    "kubernetes.io/role/elb"                    = "1"
   }
 }
 
@@ -45,7 +45,7 @@ resource "aws_subnet" "eks_subnet_1" {
   map_public_ip_on_launch = true
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"           = "1"
+    "kubernetes.io/role/elb"                    = "1"
   }
 }
 
@@ -205,9 +205,9 @@ resource "aws_eks_node_group" "eks_nodegroup_0" {
   # a = amd
   instance_types = ["m5a.large"]
   # ssh is open to the internet -> see https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group
-  remote_access {
-    ec2_ssh_key = aws_key_pair.ssh.key_name
-  }
+  # remote_access {
+  #   ec2_ssh_key = aws_key_pair.ssh.key_name
+  # }
   scaling_config {
     desired_size = 1
     max_size     = 1

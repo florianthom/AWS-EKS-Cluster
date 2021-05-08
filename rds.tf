@@ -82,19 +82,19 @@ resource "aws_db_instance" "db_postgres_instance_0" {
   engine                  = "postgres"
   engine_version          = "12.5"
   # name of rds-instance
-  identifier     = "postgres-instance-0"
+  identifier     = trimspace(file("${path.module}/secrets/db_postgres_instance_0_identifier.txt"))
   instance_class = "db.t2.micro"
   multi_az       = false
   # name of database to create when the DB-instance is created
-  name = "PersonalWebsiteBackendContextPostgre"
+  name = trimspace(file("${path.module}/secrets/db_postgres_instance_0_databasename.txt"))
   # additional parameters for postgres, if not used, aws's default parameter-group is used (here)
   # parameter_group_name     = "mydbparamgroup1"
-  password               = trimspace(file("${path.module}/secrets/db_postgres_instance_0_password.txt"))
-  port                   = 5432
-  publicly_accessible    = true
+  password            = trimspace(file("${path.module}/secrets/db_postgres_instance_0_password.txt"))
+  port                = 5432
+  publicly_accessible = true
   # db.t2.micro does not support encryption at rest (free-tier)
   storage_encrypted      = false
   storage_type           = "gp2"
-  username               = "postgres"
+  username               = trimspace(file("${path.module}/secrets/db_postgres_instance_0_database_username.txt"))
   vpc_security_group_ids = [aws_security_group.db_sg_0.id]
 }

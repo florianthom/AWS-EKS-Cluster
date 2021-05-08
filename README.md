@@ -161,12 +161,16 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
  # calico ip is in the cidr-range of something like 192.168.x.x/24
 ```
 
-
-
-
- 
-
-
+## Delete all
+At some point you want to delete the given infrastructure. In this case you can run
+`$ terraform destroy`
+Unfortunatly this will not destroy all ressources. The reason for this is that some ressources need to be deleted after another ressource got delete (race conditions) and that are only partly adressed by terraform destroy i believe. So in order to delete all other resource check your aws console for:
+- ec2/loadbalancer
+- ec2/network interfaces
+- rds/cluster
+- rds/subnets
+- vpc/subnets
+- vpc (delete whole vpc)
 
 
 ## Filestructure
