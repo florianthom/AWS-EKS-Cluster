@@ -3,7 +3,6 @@ This repository represents an attempt to create a cluster based on the eks-servi
 
 ![alt text](.github/images/infrastructure_v2.png)
 
-
 ## Learned
  - cluster-infrastructure-components
  - cluster-networking
@@ -60,7 +59,7 @@ This section describes important commands, mostly important for development purp
  # add the key-file to your ssh-config
  ssh-add <key-file>
  ssh -A ubuntu@ip-of-your-jumphost
- 
+
  # pay attention: nodes for eks run unter the
  # eks-optimized-aws-linux2-image -> the default user is "ec2-user"
  # so e.g. ec2-user@ip-of-your-hidden-node
@@ -115,6 +114,10 @@ aws sts get-caller-identity
 ```
  kubectl run my-shell --rm -i --tty --image ubuntu -- bash
 ```
+
+ - restart deployments (e.g. to repull docker images)
+`$ kubectl rollout restart deployment/personal-website-frontend-deployment`
+
 #### kubernetes-ingress
 keep in mind that the ingress is programmed to listen for a specific domain (according to the ingress-resource) (e.g. florianthom.io). So as long es you dont searched for florianthom.io you get "nginx not found". Important since you have the external ip of the ingress and you are maybe tempted to try it out but this wont work.
 Dns "a record" required for ingress-nginx: Mapping from ip to external-ip of ingress ("external-ip" is an dns-aws-name -> you have to dnslookup the ip).
@@ -172,7 +175,6 @@ Unfortunatly this will not destroy all ressources. The reason for this is that s
 - vpc/subnets
 - vpc (delete whole vpc)
 
-
 ## Filestructure
 In general a kind of domain-driven-design was chosen. So there is a
  - main.tf File: describes mostly shared ressources: e.g. main-public-route-table, eip, ssh-key-creation, ...
@@ -180,7 +182,6 @@ In general a kind of domain-driven-design was chosen. So there is a
  - worker.tf: describes the worker-host (independend of eks)
  - eks.tf: describes all ressources needed for eks
  - *.backup.tf: describes old states of files
-
 
 ## Monthly costs
 The very granular cost-approximation of the given infrastructure is somewhere around 150€-200€
@@ -192,8 +193,6 @@ The very granular cost-approximation of the given infrastructure is somewhere ar
 ## Build with
  - terraform v0.13
  - eks (Kubernetes v18)
-
-
 
 ## Acknowledgements
  - overall aws integration: https://www.youtube.com/watch?v=NjYsXuSBZ5U&ab_channel=SanjeevThiyagarajan
